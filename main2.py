@@ -39,9 +39,12 @@ class SRProcessor:
 
     def process_image(self, img_path):
         try:
-            import cv2
-            img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
-            img_tensor = img2tensor(img).to(self.device) / 255.
+            # 读取图片时指定为RGB格式
+            img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # 转换为RGB
+
+            # 使用basicsr的img2tensor处理
+            img_tensor = img2tensor(img, bgr2rgb=False, float32=True).to(self.device) / 255.
             img_tensor = img_tensor.unsqueeze(0)
 
             h, w = img_tensor.shape[2:]
@@ -53,9 +56,9 @@ class SRProcessor:
                 else:
                     output = self.model.test_tile(img_tensor)
 
-            output_img = tensor2img(output)
+            # 使用tensor2img时确保颜色空间正确
+            output_img = tensor2img(output, rgb2bgr=False)  # 保持RGB格式
 
-            from PIL import Image
             return Image.fromarray(output_img.astype('uint8'))
 
         except Exception as e:
